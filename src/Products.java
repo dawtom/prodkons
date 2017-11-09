@@ -1,10 +1,7 @@
-import java.nio.file.attribute.UserPrincipalNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Queue;
 import java.util.Random;
 import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class Products {
@@ -26,8 +23,8 @@ public class Products {
     private final Condition firstConsumer = lock.newCondition();
     private final Condition restOfConsumers = lock.newCondition();
 
-
-
+    private boolean firstPlaceForProducerIsOccupied = false;
+    private boolean firstPlaceForConsumerIsOccupied = false;
 
 
     public Products(){
@@ -36,20 +33,18 @@ public class Products {
         }
     }
 
-
-    //private int buff = 0;
-
     public void insert(int howMany, String myName){
 
         lock.lock();
-        if (lock.getWaitQueueLength(firstProducer) > 0){
+        //if (lock.getWaitQueueLength(firstProducer) > 0){
+        if (firstPlaceForProducerIsOccupied){
             try{
                 restOfProducers.await();
             } catch (Exception e){
                 System.out.println("ERROR: " + e.getMessage());
             }
         }
-
+        firstPlaceForProducerIsOccupied = true;
         while(capacity - count < howMany){
             try{
                 firstProducer.await();
@@ -57,31 +52,7 @@ public class Products {
                 System.out.println("ERROR: " + e.getMessage());
             }
         }
-        /*dziura w rozwiązaniu: jest tam gdzie if
-        * Jeśli założymy, żę spr że jesteśmy pierwsi, odwieszamy się
-        * Jesteśmy pierwsi i chcemy ileś zasobów. W takim razie wieszamy się
-        * w while. W javie wtedy proces jest wyrzucony z monitora i musi
-        * się znowu ubiegać o wejście do monitora ze wszystkimi
-        * Ktoś inny jest pierwszy raz, sprawdza ifa
-        * Będą podjadane zasoby, nad którymi nie mamy kontroli
-        * W javie musimy załatać dziurę między zwolnieniem a wejściem
-        * Zatem if nie ma być jako "czy jest w kolejce" tylko
-        * "Czy na pewno ktoś sobie nie zarezerował kolejki"
-        * Na następnej kartkówce będzie trzeba to opisać i pokazać
-        * jak zakleszczyć powyższe rozwiązanie
-        * To zadanie jest bardzo ważne, ma chodzić, na ocenę
-        * Na zadanie domowe zaimplementować to ze zrozumieniem.
-        * Oprócz tego: zad 4.4.4 (zrobić)
-        * Za karę :P:
-        * Przeczytać 3 drukarki (4.4.7), stolik dwuosobowy (4.4.9),
-        * 4.4.10 (zasoby dwóch typów)*/
-        /*while (count + howMany >= capacity){
-            try{
-                notFull.await();
-            } catch (Exception e){
-                System.out.println("ERROR, " + e.getMessage());
-            }
-        }*/
+
 
         for (int i = 0; i < howMany; i++) {
             toInsertIndex = (toInsertIndex + 1) % capacity;
@@ -94,36 +65,27 @@ public class Products {
         System.out.println("Producer "+myName+" inserted " + howMany + ", buffer is: " + buffer.toString()
          + ", count: " + count);
 
+        firstPlaceForProducerIsOccupied = false;
         restOfProducers.signal();
         firstConsumer.signal();
 
-/*        notEmpty.signal();
 
-        lock.unlock();*/
         lock.unlock();
 
     }
 
     public void consume(int howMany, String myName){
         lock.lock();
-        /*lock.lock();
-        while (count - howMany <= 0){
-            try{
-                notEmpty.await();
 
-            } catch (Exception e){
-                System.out.println("ERROR, " + e.getMessage());
-            }
-        }*/
-
-        if (lock.getWaitQueueLength(firstConsumer) > 0){
+        //if (lock.getWaitQueueLength(firstConsumer) > 0){
+        if (firstPlaceForConsumerIsOccupied){
             try{
                 restOfConsumers.await();
             } catch (Exception e){
                 System.out.println("ERROR: " + e.getMessage());
             }
         }
-
+        firstPlaceForConsumerIsOccupied = true;
         while(count < howMany){
             try{
                 firstConsumer.await();
@@ -137,7 +99,7 @@ public class Products {
             buffer.set(toGetIndex, 0);
             count--;
         }
-
+        firstPlaceForConsumerIsOccupied = false;
         restOfConsumers.signal();
         firstProducer.signal();
 
@@ -145,8 +107,6 @@ public class Products {
          + ", count: " + count);
 
         lock.unlock();
-        /*notFull.signal();
-        lock.unlock();
-*/
+
     }
 }
