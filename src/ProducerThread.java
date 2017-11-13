@@ -11,7 +11,8 @@ public class ProducerThread extends Thread {
 
     public void run(){
         while(true){
-            Main.products.insert(((r.nextInt() % 5) + 5), this.name);
+            Main.products.finishInserting(
+                    Main.products.beginInserting(this.name), this.name);
         }
     }
 }

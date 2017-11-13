@@ -1,8 +1,11 @@
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+
+
 
 public class Products {
 
@@ -15,6 +18,7 @@ public class Products {
 
     private int capacity = 20;
     private List<Integer> buffer = new ArrayList<>();
+    private List<FieldState> states = new ArrayList<>();
 
     private Random r = new Random();
     private final ReentrantLock lock = new ReentrantLock();
@@ -22,6 +26,7 @@ public class Products {
     private final Condition restOfProducers = lock.newCondition();
     private final Condition firstConsumer = lock.newCondition();
     private final Condition restOfConsumers = lock.newCondition();
+    private final Condition locked = lock.newCondition();
 
     private boolean firstPlaceForProducerIsOccupied = false;
     private boolean firstPlaceForConsumerIsOccupied = false;
@@ -30,83 +35,51 @@ public class Products {
     public Products(){
         for (int i = 0; i < capacity; i++) {
             buffer.add(0);
+            states.add(FieldState.Empty);
         }
     }
 
-    public void insert(int howMany, String myName){
-
-        lock.lock();
-        //if (lock.getWaitQueueLength(firstProducer) > 0){
-        if (firstPlaceForProducerIsOccupied){
-            try{
-                restOfProducers.await();
-            } catch (Exception e){
-                System.out.println("ERROR: " + e.getMessage());
-            }
-        }
-        firstPlaceForProducerIsOccupied = true;
-        while(capacity - count < howMany){
-            try{
-                firstProducer.await();
-            } catch (Exception e){
-                System.out.println("ERROR: " + e.getMessage());
-            }
-        }
-
-
-        for (int i = 0; i < howMany; i++) {
+    public int beginInserting(String myName){
+        int i;
+        if (!states.get(toInsertIndex).equals(FieldState.Empty)){
+            i = capacity;
+        } else{
+            i = toInsertIndex;
+            states.set(toInsertIndex, FieldState.Occupied);
             toInsertIndex = (toInsertIndex + 1) % capacity;
-
-            buffer.set(toInsertIndex, r.nextInt()%50 + 50);
-
-            count ++;
         }
 
-        System.out.println("Producer "+myName+" inserted " + howMany + ", buffer is: " + buffer.toString()
-         + ", count: " + count);
+        System.out.println("Producer " + myName + " began inserting. " + buffer.toString());
 
-        firstPlaceForProducerIsOccupied = false;
-        restOfProducers.signal();
-        firstConsumer.signal();
-
-
-        lock.unlock();
-
+        return i;
     }
 
-    public void consume(int howMany, String myName){
-        lock.lock();
+    public void finishInserting(int i, String myName){
+        states.set(i,FieldState.Full);
+        if (i == toGetIndex){
+            locked.signal();
+        }
 
-        //if (lock.getWaitQueueLength(firstConsumer) > 0){
-        if (firstPlaceForConsumerIsOccupied){
-            try{
-                restOfConsumers.await();
-            } catch (Exception e){
-                System.out.println("ERROR: " + e.getMessage());
+        System.out.println("Producer " + myName + " finished inserting. " + buffer.toString());
+    }
+
+    public int startConsuming(String myName){
+        int i = 0;
+        if (states.get(toGetIndex).equals(FieldState.Full)){
+            try {
+                locked.await();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
-        firstPlaceForConsumerIsOccupied = true;
-        while(count < howMany){
-            try{
-                firstConsumer.await();
-            } catch (Exception e){
-                System.out.println("ERROR: " + e.getMessage());
-            }
-        }
+        i = toGetIndex;
+        toGetIndex = (toGetIndex + 1) % capacity;
+        System.out.println("Consumer " + myName + " began consuming. " + buffer.toString());
+        return i;
+    }
 
-        for (int i = 0; i < howMany; i++) {
-            toGetIndex = (toGetIndex + 1) % capacity;
-            buffer.set(toGetIndex, 0);
-            count--;
-        }
-        firstPlaceForConsumerIsOccupied = false;
-        restOfConsumers.signal();
-        firstProducer.signal();
-
-        System.out.println("Consumer "+myName+" consumed "+ howMany +", buffer is: " + buffer.toString()
-         + ", count: " + count);
-
-        lock.unlock();
-
+    public void finishConsuming(int i, String myName){
+        states.set(toGetIndex,FieldState.Empty);
+        System.out.println("Consumer " + myName + " finished consuming. " + buffer.toString());
     }
 }

@@ -12,7 +12,8 @@ public class ConsumerThread extends Thread{
 
     public void run(){
         while(true){
-            Main.products.consume((r.nextInt()%5) + 5, this.name);
+            Main.products.finishConsuming(
+                    Main.products.startConsuming(this.name), this.name);
         }
     }
 }
