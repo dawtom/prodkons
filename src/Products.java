@@ -33,12 +33,18 @@ public class Products {
         }
     }
 
+    public int howManyTimesHasFirstProducerBeenRejected = 0;
+
     public void insert(int howMany, String myName){
 
         lock.lock();
         //if (lock.getWaitQueueLength(firstProducer) > 0){
         if (firstPlaceForProducerIsOccupied){
             try{
+                if (myName.equals("P1")){
+                    howManyTimesHasFirstProducerBeenRejected++;
+                    //System.out.println("Reject " + howManyTimesHasFirstProducerBeenRejected);
+                }
                 restOfProducers.await();
             } catch (Exception e){
                 System.out.println("ERROR: " + e.getMessage());
@@ -54,6 +60,12 @@ public class Products {
         }
 
 
+        if (myName.equals("P1")){
+            System.out.println("Rejects: " + howManyTimesHasFirstProducerBeenRejected + "" +
+                    "     ::::   random: " + r.nextInt()%50);
+            howManyTimesHasFirstProducerBeenRejected = 0;
+        }
+
         for (int i = 0; i < howMany; i++) {
             toInsertIndex = (toInsertIndex + 1) % capacity;
 
@@ -62,8 +74,8 @@ public class Products {
             count ++;
         }
 
-        System.out.println("Producer "+myName+" inserted " + howMany + ", buffer is: " + buffer.toString()
-         + ", count: " + count);
+//        System.out.println("Producer "+myName+" inserted " + howMany + ", buffer is: " + buffer.toString()
+//         + ", count: " + count);
 
         firstPlaceForProducerIsOccupied = false;
         restOfProducers.signal();
@@ -103,10 +115,32 @@ public class Products {
         restOfConsumers.signal();
         firstProducer.signal();
 
-        System.out.println("Consumer "+myName+" consumed "+ howMany +", buffer is: " + buffer.toString()
-         + ", count: " + count);
+//        System.out.println("Consumer "+myName+" consumed "+ howMany +", buffer is: " + buffer.toString()
+//         + ", count: " + count);
 
         lock.unlock();
 
     }
 }
+
+/*
+Współbieżność: ogarnąć artykuł na moodlu (ten z C++),
+        zrobić porządnie asynchroniczne prodkons,
+        będziemy go w formie kartkówkowej/ustnej omawiać.
+        Monitor jest klasą, bufor jest osobną klasą poza monitorem.
+        Prod, kons mają podzieloną prod/kons na dwie części,
+        monitor ogarnia tylko pozycje.
+        Jak zorganizować monitor i przekazywanie przepustek?
+        Nie musimy śledzić dokładnie każdego pola i condition
+        na tych polach. Możemy posiadać kolejkę elementów pełnych
+        i pustych (LIFO).
+        Przychodzimy, bierzemy pole z kolejki, które jest wolne
+        i idziemy produkować/konsumować.
+        NIE zajmujemy się wyciekami zasobów (nic nie wycieka -
+        wszystko pięknie działa). Producenci i konsumenci produkują
+        i konsumują po jednym elemencie. Żeby oddać zadanie trzeba
+        mieć wyniki liczbowe dla zagłodzonego programu, wyniki liczbowe
+        dla niezagłodzonego programu, potem patrzymy w kod i znać dobrze ten kod.
+        Ogarnąć active object.
+*/
+

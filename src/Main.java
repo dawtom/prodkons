@@ -17,7 +17,7 @@ public class Main {
     private static int threadsNumber = 100;*/
 
     public static Products products= new Products();
-    private static int prodsNumber = 4;
+    private static int prodsNumber = 40;
     private static int consNumber = 2;
 
     //public MySemaphore mySemaphore = new MySemaphore();
