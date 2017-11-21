@@ -12,8 +12,13 @@ public class ConsumerThread extends Thread{
 
     public void run(){
         while(true){
-            Main.products.finishConsuming(
-                    Main.products.startConsuming(this.name), this.name);
+            int index = Main.products.beginConsuming(this.name);
+            if (index <= Products.getCapacity()){
+                Main.products.buffer.set(index, 0);
+            }
+            //here actual consuming
+
+            Main.products.finishConsuming(index, this.name);
         }
     }
 }

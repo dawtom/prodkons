@@ -11,8 +11,16 @@ public class ProducerThread extends Thread {
 
     public void run(){
         while(true){
-            Main.products.finishInserting(
-                    Main.products.beginInserting(this.name), this.name);
+            int index = Main.products.beginInserting(this.name);
+
+            //System.out.println("i: " + index + ", capacity: " + Products.getCapacity());
+            if (index < Products.getCapacity()){
+                Main.products.buffer.set(index,((r.nextInt())%45)+55);
+            }
+            //here insert to an external buffer
+
+            Main.products.finishInserting(index, this.name);
+
         }
     }
 }
