@@ -17,8 +17,8 @@ public class Main {
     private static int threadsNumber = 100;*/
 
     public static Products products= new Products();
-    private static int prodsNumber = 3;
-    private static int consNumber = 3;
+    private static int prodsNumber = 30;
+    private static int consNumber = 30;
 
     //public MySemaphore mySemaphore = new MySemaphore();
     // public static Semaphore semaphore = new Semaphore(1);
@@ -39,7 +39,7 @@ public class Main {
         for (ProducerThread p:
              producers) {
             try{
-                Thread.sleep(100);
+                //Thread.sleep(100);
             } catch (Exception e){
 
             }

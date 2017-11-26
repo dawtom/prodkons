@@ -14,10 +14,10 @@ public class ProducerThread extends Thread {
             int index = Main.products.beginInserting(this.name);
 
             //System.out.println("i: " + index + ", capacity: " + Products.getCapacity());
-            if (index < Products.getCapacity()){
+            //produce
+            //if (index < Products.getCapacity()){
                 Main.products.buffer.set(index,((r.nextInt())%45)+55);
-            }
-            //here insert to an external buffer
+            //}
 
             Main.products.finishInserting(index, this.name);
 

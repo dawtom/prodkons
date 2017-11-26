@@ -60,64 +60,75 @@ public class Products {
 
     }
 
-    public  int beginInserting(String myName){
+    public int beginInserting(String myName){
         lock.lock();
+        //
         while (queueEmpty.isEmpty()){
             try{
+                //lock.lock();
                 waitProducer.await();
+                //lock.unlock();
             } catch (Exception e){
                 e.printStackTrace();
             }
         }
+        System.out.println("Queue empty: " + queueEmpty.toString());
         int i = queueEmpty.poll();
         queueFull.offer(i);
         isAvailable[i] = false;
         try{
+//            lock.lock();
             waitConsumer.signal();
+//            lock.unlock();
         } catch (Exception e){
             e.printStackTrace();
         }
         lock.unlock();
-        System.out.println("Producer " + myName + " began inserting. " + buffer.toString() + ", " +
-                "index: " + toInsertIndex);
+//        System.out.println("Producer " + myName + " began inserting. " + buffer.toString() + ", " +
+//                "index: " + toInsertIndex);
         return i;
     }
 
     public  void finishInserting(int i, String myName){
-        lock.lock();
+//        lock.lock();
         isAvailable[i] = true;
-        giveConsumer[i].signal();
-        System.out.println("Producer " + myName + " finished inserting. " + buffer.toString() + ", " +
-                "i: " + i);
-        lock.unlock();
+        //giveConsumer[i].signal();
+//        System.out.println("Producer " + myName + " finished inserting. " + buffer.toString() + ", " +
+//                "i: " + i);
+//        lock.unlock();
     }
 
     public  int beginConsuming(String myName){
         lock.lock();
         while (queueFull.isEmpty()){
             try{
+//                lock.lock();
+                waitConsumer.await();
+//                lock.unlock();
+            } catch (Exception e){
+                e.printStackTrace();
+            }
+        }
+        System.out.println("Queue full: " + queueFull.toString());
+        int i = queueFull.poll();
+        if (!isAvailable[i]){
+            try{
                 waitConsumer.await();
             } catch (Exception e){
                 e.printStackTrace();
             }
         }
-        int i = queueFull.poll();
-        if (!isAvailable[i]){
-            try{
-                giveConsumer[i].await();
-            } catch (Exception e){
-                e.printStackTrace();
-            }
-        }
-        System.out.println("Consumer " + myName + " began consuming. " + buffer.toString());
+//        System.out.println("Consumer " + myName + " began consuming. " + buffer.toString());
         lock.unlock();
         return i;
     }
     public  void finishConsuming(int i, String myName){
         lock.lock();
         queueEmpty.offer(i);
+//        lock.lock();
         waitProducer.signal();
-        System.out.println("Consumer " + myName + " finished consuming. " + buffer.toString());
+//        lock.unlock();
+//        System.out.println("Consumer " + myName + " finished consuming. " + buffer.toString());
 
         lock.unlock();
     }
