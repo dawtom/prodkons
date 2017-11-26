@@ -60,10 +60,11 @@ public class Products {
 
     }
 
-    public int beginInserting(String myName){
+    public List<Integer> beginInserting(String myName, int howMany){
         lock.lock();
         //
-        while (queueEmpty.isEmpty()){
+        List<Integer> result = new LinkedList<>();
+        while (/*queueEmpty.isEmpty()*/queueEmpty.size() < howMany){
             try{
                 //lock.lock();
                 waitProducer.await();
@@ -73,9 +74,14 @@ public class Products {
             }
         }
         System.out.println("Queue empty: " + queueEmpty.toString());
-        int i = queueEmpty.poll();
-        queueFull.offer(i);
-        isAvailable[i] = false;
+
+        for (int i = 0; i < howMany; i++) {
+            int j = queueEmpty.poll();
+            queueFull.offer(j);
+            result.add(j);
+            isAvailable[j] = false;
+        }
+
         try{
 //            lock.lock();
             waitConsumer.signal();
@@ -86,21 +92,25 @@ public class Products {
         lock.unlock();
 //        System.out.println("Producer " + myName + " began inserting. " + buffer.toString() + ", " +
 //                "index: " + toInsertIndex);
-        return i;
+        return result;
     }
 
-    public  void finishInserting(int i, String myName){
+    public void finishInserting(List<Integer> indexes, String myName){
 //        lock.lock();
-        isAvailable[i] = true;
+        for (Integer x:
+             indexes) {
+            isAvailable[x] = true;
+        }
         //giveConsumer[i].signal();
 //        System.out.println("Producer " + myName + " finished inserting. " + buffer.toString() + ", " +
 //                "i: " + i);
 //        lock.unlock();
     }
 
-    public  int beginConsuming(String myName){
+    public  List<Integer> beginConsuming(String myName, int howMany){
         lock.lock();
-        while (queueFull.isEmpty()){
+        List<Integer> result = new LinkedList<>();
+        while (/*queueFull.isEmpty()*/ queueFull.size() < howMany){
             try{
 //                lock.lock();
                 waitConsumer.await();
@@ -109,22 +119,35 @@ public class Products {
                 e.printStackTrace();
             }
         }
-        System.out.println("Queue full: " + queueFull.toString());
-        int i = queueFull.poll();
-        if (!isAvailable[i]){
-            try{
-                waitConsumer.await();
-            } catch (Exception e){
-                e.printStackTrace();
+
+        for (int i = 0; i < howMany; i++){
+            System.out.println("****");
+            System.out.println("Queue full: " + queueFull.toString());
+            System.out.println("queue full size:" + queueFull.size());
+            System.out.println("i: " + i);
+            System.out.println("How many: " + howMany);
+            System.out.println("****");
+            int j = queueFull.poll();
+            result.add(j);
+            while (!isAvailable[j]){
+                try{
+                    waitConsumer.await();
+                } catch (Exception e){
+                    e.printStackTrace();
+                }
             }
         }
 //        System.out.println("Consumer " + myName + " began consuming. " + buffer.toString());
         lock.unlock();
-        return i;
+        return result;
     }
-    public  void finishConsuming(int i, String myName){
+    public  void finishConsuming(List<Integer> indexes, String myName){
         lock.lock();
-        queueEmpty.offer(i);
+        for (Integer x :
+                indexes) {
+            queueEmpty.offer(x);
+        }
+
 //        lock.lock();
         waitProducer.signal();
 //        lock.unlock();

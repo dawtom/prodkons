@@ -1,3 +1,5 @@
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Random;
 
 public class ConsumerThread extends Thread{
@@ -12,14 +14,20 @@ public class ConsumerThread extends Thread{
 
     public void run(){
         while(true){
-            int index = Main.products.beginConsuming(this.name);
+            List<Integer> indexes = new LinkedList<>();
+
+            indexes = Main.products.beginConsuming(this.name, (r.nextInt() % 3) + 3);
 
             //consume
 
+            for (Integer index :
+                    indexes) {
                 Main.products.buffer.set(index, 0);
+            }
 
 
-            Main.products.finishConsuming(index, this.name);
+
+            Main.products.finishConsuming(indexes, this.name);
         }
     }
 }

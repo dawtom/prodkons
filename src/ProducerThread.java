@@ -1,3 +1,5 @@
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Random;
 
 public class ProducerThread extends Thread {
@@ -11,15 +13,21 @@ public class ProducerThread extends Thread {
 
     public void run(){
         while(true){
-            int index = Main.products.beginInserting(this.name);
+            List<Integer> indexes = new LinkedList<>();
+            indexes =  Main.products.beginInserting(this.name, (r.nextInt() % 3) + 3);
 
             //System.out.println("i: " + index + ", capacity: " + Products.getCapacity());
             //produce
             //if (index < Products.getCapacity()){
-                Main.products.buffer.set(index,((r.nextInt())%45)+55);
+
+            for (Integer i :
+                    indexes) {
+                Main.products.buffer.set(i,((r.nextInt())%45)+55);
+            }
+
             //}
 
-            Main.products.finishInserting(index, this.name);
+            Main.products.finishInserting(indexes, this.name);
 
         }
     }
