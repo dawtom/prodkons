@@ -1,5 +1,6 @@
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -38,6 +39,8 @@ public class Products {
 
     private boolean [] isAvailable = new boolean[capacity];
 
+    AtomicInteger availableElementsNumber = new AtomicInteger(0);
+
 
 
 
@@ -67,6 +70,8 @@ public class Products {
         while (/*queueEmpty.isEmpty()*/queueEmpty.size() < howMany){
             try{
                 //lock.lock();
+                System.out.println("Producer is waiting:, sizeEmpty is " + queueEmpty.size()
+                 + "howMany is: " + howMany);
                 waitProducer.await();
                 //lock.unlock();
             } catch (Exception e){
@@ -77,18 +82,12 @@ public class Products {
 
         for (int i = 0; i < howMany; i++) {
             int j = queueEmpty.poll();
+            //isAvailable[j] = false;
             queueFull.offer(j);
             result.add(j);
-            isAvailable[j] = false;
         }
 
-        try{
-//            lock.lock();
-            waitConsumer.signal();
-//            lock.unlock();
-        } catch (Exception e){
-            e.printStackTrace();
-        }
+
         lock.unlock();
 //        System.out.println("Producer " + myName + " began inserting. " + buffer.toString() + ", " +
 //                "index: " + toInsertIndex);
@@ -96,15 +95,22 @@ public class Products {
     }
 
     public void finishInserting(List<Integer> indexes, String myName){
-//        lock.lock();
-        for (Integer x:
+        lock.lock();
+        /*for (Integer x:
              indexes) {
             isAvailable[x] = true;
+        }*/
+        try{
+//            lock.lock();
+            waitConsumer.signal();
+//            lock.unlock();
+        } catch (Exception e){
+            e.printStackTrace();
         }
         //giveConsumer[i].signal();
 //        System.out.println("Producer " + myName + " finished inserting. " + buffer.toString() + ", " +
 //                "i: " + i);
-//        lock.unlock();
+        lock.unlock();
     }
 
     public  List<Integer> beginConsuming(String myName, int howMany){
@@ -113,6 +119,8 @@ public class Products {
         while (/*queueFull.isEmpty()*/ queueFull.size() < howMany){
             try{
 //                lock.lock();
+                System.out.println("Consumer is waiting:, sizeFull is " + queueFull.size()
+                        + "howMany is: " + howMany);
                 waitConsumer.await();
 //                lock.unlock();
             } catch (Exception e){
@@ -121,21 +129,31 @@ public class Products {
         }
 
         for (int i = 0; i < howMany; i++){
+            String str = "null";
+            String size = "nll";
+            if (queueFull != null){
+                str = queueFull.toString();
+                size = "" + queueFull.size();
+            }
             System.out.println("****");
-            System.out.println("Queue full: " + queueFull.toString());
-            System.out.println("queue full size:" + queueFull.size());
+            System.out.println("Thread name: " + myName);
+            System.out.println("Queue full: " + str);
+            System.out.println("queue full size:" + size);
             System.out.println("i: " + i);
             System.out.println("How many: " + howMany);
             System.out.println("****");
             int j = queueFull.poll();
-            result.add(j);
-            while (!isAvailable[j]){
-                try{
+
+            /*while (!isAvailable[j]){
+                queueFull.offer(j);
+                j = queueFull.poll();
+                *//*try{
                     waitConsumer.await();
                 } catch (Exception e){
                     e.printStackTrace();
-                }
-            }
+                }*//*
+            }*/
+            result.add(j);
         }
 //        System.out.println("Consumer " + myName + " began consuming. " + buffer.toString());
         lock.unlock();
