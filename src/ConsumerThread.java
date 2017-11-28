@@ -25,6 +25,8 @@ public class ConsumerThread extends Thread{
                 Main.products.buffer.set(index, 0);
             }
 
+            System.out.println("After consumer: " + Main.products.buffer.toString());
+
 
 
             Main.products.finishConsuming(indexes, this.name);

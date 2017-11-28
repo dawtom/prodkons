@@ -16,16 +16,13 @@ public class ProducerThread extends Thread {
             List<Integer> indexes = new LinkedList<>();
             indexes =  Main.products.beginInserting(this.name, (r.nextInt() % 3) + 3);
 
-            //System.out.println("i: " + index + ", capacity: " + Products.getCapacity());
-            //produce
-            //if (index < Products.getCapacity()){
 
             for (Integer i :
                     indexes) {
                 Main.products.buffer.set(i,((r.nextInt())%45)+55);
             }
 
-            //}
+            System.out.println("After producer: " + Main.products.buffer.toString());
 
             Main.products.finishInserting(indexes, this.name);
 
