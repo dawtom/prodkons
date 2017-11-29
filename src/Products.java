@@ -4,6 +4,8 @@ import java.util.Random;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static java.lang.Thread.sleep;
+
 public class Products {
 
     private int count = 0;
@@ -23,8 +25,8 @@ public class Products {
     private final Condition firstConsumer = lock.newCondition();
     private final Condition restOfConsumers = lock.newCondition();
 
-    private boolean firstPlaceForProducerIsOccupied = false;
-    private boolean firstPlaceForConsumerIsOccupied = false;
+    private boolean producerFirstPlaceIsOccupied = false;
+    private boolean consumerFirstPlaceIsOccupied = false;
 
 
     public Products(){
@@ -33,24 +35,24 @@ public class Products {
         }
     }
 
-    public int howManyTimesHasFirstProducerBeenRejected = 0;
+    public int howManyTimesHasFirstProducerTried = 1;
 
     public void insert(int howMany, String myName){
 
         lock.lock();
-        //if (lock.getWaitQueueLength(firstProducer) > 0){
-        if (firstPlaceForProducerIsOccupied){
+//        if (lock.getWaitQueueLength(firstProducer) > 0){
+        if (producerFirstPlaceIsOccupied){
             try{
                 if (myName.equals("P1")){
-                    howManyTimesHasFirstProducerBeenRejected++;
-                    //System.out.println("Reject " + howManyTimesHasFirstProducerBeenRejected);
+                    howManyTimesHasFirstProducerTried++;
+                    //System.out.println("Reject " + howManyTimesHasFirstProducerTried);
                 }
                 restOfProducers.await();
             } catch (Exception e){
                 System.out.println("ERROR: " + e.getMessage());
             }
         }
-        firstPlaceForProducerIsOccupied = true;
+        producerFirstPlaceIsOccupied = true;
         while(capacity - count < howMany){
             try{
                 firstProducer.await();
@@ -58,12 +60,17 @@ public class Products {
                 System.out.println("ERROR: " + e.getMessage());
             }
         }
-
+//tylko wychodzący wątek wie co się dzieje, tam by pasowało ustawić
+        // nie robić jakichś idków
+        // trzeba przy wychodzeniu ładnie zablokować
 
         if (myName.equals("P1")){
-            System.out.println("Rejects: " + howManyTimesHasFirstProducerBeenRejected + "" +
-                    "     ::::   random: " + r.nextInt()%50);
-            howManyTimesHasFirstProducerBeenRejected = 0;
+            if (howManyTimesHasFirstProducerTried > 0){
+                System.out.println("Tries: " + howManyTimesHasFirstProducerTried + "" +
+                        "     ::::   random: " + r.nextInt()%50);
+
+            }
+            howManyTimesHasFirstProducerTried = 0;
         }
 
         for (int i = 0; i < howMany; i++) {
@@ -77,27 +84,31 @@ public class Products {
 //        System.out.println("Producer "+myName+" inserted " + howMany + ", buffer is: " + buffer.toString()
 //         + ", count: " + count);
 
-        firstPlaceForProducerIsOccupied = false;
-        restOfProducers.signal();
+
+        if(lock.hasWaiters(restOfProducers))
+            restOfProducers.signal();
+        else
+            producerFirstPlaceIsOccupied = false;
+
+
+//        restOfProducers.signal();
         firstConsumer.signal();
 
-
         lock.unlock();
-
     }
 
     public void consume(int howMany, String myName){
         lock.lock();
 
         //if (lock.getWaitQueueLength(firstConsumer) > 0){
-        if (firstPlaceForConsumerIsOccupied){
+        if (consumerFirstPlaceIsOccupied){
             try{
                 restOfConsumers.await();
             } catch (Exception e){
                 System.out.println("ERROR: " + e.getMessage());
             }
         }
-        firstPlaceForConsumerIsOccupied = true;
+        consumerFirstPlaceIsOccupied = true;
         while(count < howMany){
             try{
                 firstConsumer.await();
@@ -111,8 +122,13 @@ public class Products {
             buffer.set(toGetIndex, 0);
             count--;
         }
-        firstPlaceForConsumerIsOccupied = false;
-        restOfConsumers.signal();
+
+        if (lock.hasWaiters(restOfConsumers)){
+            restOfConsumers.signal();
+        } else{
+            consumerFirstPlaceIsOccupied = false;
+        }
+
         firstProducer.signal();
 
 //        System.out.println("Consumer "+myName+" consumed "+ howMany +", buffer is: " + buffer.toString()
