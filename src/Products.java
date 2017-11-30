@@ -1,4 +1,3 @@
-import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
@@ -24,14 +23,17 @@ public class Products {
     private List<FieldState> states = new ArrayList<>();
 
     private Random r = new Random();
-    private final ReentrantLock lock = new ReentrantLock();
-    private final Condition waitProducer = lock.newCondition();
-    private final Condition waitConsumer = lock.newCondition();
-    private final Condition giveProducer = lock.newCondition();
-    private final Condition locked = lock.newCondition();
+    private final ReentrantLock producerLock = new ReentrantLock();
+    private final ReentrantLock consumerLock = new ReentrantLock();
+    private final Condition firstProducerWait = producerLock.newCondition();
+    private final Condition restProducersWait = producerLock.newCondition();
+    private final Condition firstConsumerWait = consumerLock.newCondition();
+    private final Condition waitRestConsumers = consumerLock.newCondition();
+
+    private final Condition locked = producerLock.newCondition();
     private final Condition [] giveConsumer = new Condition[capacity];
 
-    private boolean firstPlaceForProducerIsOccupied = false;
+    private boolean producerFirstPlaceIsOccupied = false;
     private boolean firstPlaceForConsumerIsOccupied = false;
 
     Queue<Integer> queueEmpty = new LinkedList<>();
@@ -51,7 +53,7 @@ public class Products {
             states.add(FieldState.Empty);
         }
         for (int i = 0; i < capacity; i++) {
-            giveConsumer[i] = lock.newCondition();
+            giveConsumer[i] = producerLock.newCondition();
         }
         for (int i = 0; i < capacity; i++) {
             queueEmpty.offer(i);
@@ -64,12 +66,22 @@ public class Products {
     }
 
     public List<Integer> beginInserting(String myName, int howMany){
-        lock.lock();
+        producerLock.lock();
         //
+
+        if (producerFirstPlaceIsOccupied){
+            try {
+                restProducersWait.await();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        producerFirstPlaceIsOccupied = true;
         List<Integer> result = new LinkedList<>();
         while (/*queueEmpty.isEmpty()*/queueEmpty.size() < howMany){
             try{
-                waitProducer.await();
+                firstProducerWait.await();
             } catch (Exception e){
                 e.printStackTrace();
             }
@@ -83,23 +95,30 @@ public class Products {
         }
 
 
-        lock.unlock();
+
+        producerLock.unlock();
         return result;
     }
 
     public void finishInserting(List<Integer> indexes, String myName){
-        lock.lock();
+        producerLock.lock();
+
+        if (producerLock.hasWaiters(restProducersWait)) {
+            restProducersWait.signal();
+        } else {
+            producerFirstPlaceIsOccupied = false;
+        }
 
         try{
-            waitConsumer.signal();
+            firstConsumerWait.signal();
         } catch (Exception e){
             e.printStackTrace();
         }
-        lock.unlock();
+        producerLock.unlock();
     }
 
     public  List<Integer> beginConsuming(String myName, int howMany){
-        lock.lock();
+        consumerLock.lock();
         List<Integer> result = new LinkedList<>();
         while (/*queueFull.isEmpty()*/ queueFull.size() < howMany){
             try{
@@ -115,11 +134,11 @@ public class Products {
 
             result.add(j);
         }
-        lock.unlock();
+        consumerLock.unlock();
         return result;
     }
     public  void finishConsuming(List<Integer> indexes, String myName){
-        lock.lock();
+        consumerLock.lock();
         for (Integer x :
                 indexes) {
             queueEmpty.offer(x);
@@ -127,7 +146,7 @@ public class Products {
 
         waitProducer.signal();
 
-        lock.unlock();
+        consumerLock.unlock();
     }
 
 
