@@ -1,4 +1,3 @@
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
@@ -7,13 +6,13 @@ public class ProducerThread extends Thread {
     private String name;
     private Random r = new Random();
 
-    public ProducerThread(String name){
+    ProducerThread(String name){
         this.name = name;
     }
 
     public void run(){
         while(true){
-            List<Integer> indexes = new LinkedList<>();
+            List<Integer> indexes;
             indexes =  Main.products.beginInserting(this.name, (r.nextInt() % 3) + 3);
 
 
@@ -22,7 +21,7 @@ public class ProducerThread extends Thread {
                 Main.products.buffer.set(i,((r.nextInt())%45)+55);
             }
 
-            System.out.println("After producer: " + Main.products.buffer.toString());
+//            System.out.println("After producer: " + Main.products.buffer.toString());
 
             Main.products.finishInserting(indexes, this.name);
 
