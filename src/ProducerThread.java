@@ -13,7 +13,7 @@ public class ProducerThread extends Thread {
     public void run(){
         while(true){
             List<Integer> indexes;
-            indexes =  Main.products.beginInserting(this.name, (r.nextInt() % 3) + 3);
+            indexes =  Main.products.beginInserting((r.nextInt() % 3) + 3);
 
 
             for (Integer i :
@@ -23,7 +23,7 @@ public class ProducerThread extends Thread {
 
 //            System.out.println("After producer: " + Main.products.buffer.toString());
 
-            Main.products.finishInserting(indexes, this.name);
+            Main.products.finishInserting(indexes);
 
         }
     }

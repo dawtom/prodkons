@@ -16,7 +16,7 @@ public class ConsumerThread extends Thread{
         while(true){
             List<Integer> indexes = new LinkedList<>();
 
-            indexes = Main.products.beginConsuming(this.name, (r.nextInt() % 3) + 3);
+            indexes = Main.products.beginConsuming((r.nextInt() % 3) + 3);
 
             //consume
 
@@ -29,7 +29,7 @@ public class ConsumerThread extends Thread{
 
 
 
-            Main.products.finishConsuming(indexes, this.name);
+            Main.products.finishConsuming(indexes);
         }
     }
 }
