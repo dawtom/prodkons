@@ -1,6 +1,7 @@
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 public class ConsumerThread extends Thread{
 
@@ -13,23 +14,30 @@ public class ConsumerThread extends Thread{
     private Random r = new Random();
 
     public void run(){
-        while(true){
+        while(MainAsync.threadsAreRunning){
             List<Integer> indexes = new LinkedList<>();
 
-            indexes = Main.products.beginConsuming((r.nextInt() % 3) + 3);
+            indexes = MainAsync.products.beginConsuming(r.nextInt(999));
 
             //consume
 
             for (Integer index :
                     indexes) {
-                Main.products.buffer.set(index, 0);
+                MainAsync.products.buffer.set(index, 0);
+            }
+            try {
+                TimeUnit.MILLISECONDS.sleep(MainAsync.bufferDelayInMilliseconds);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
 
-//            System.out.println("After consumer: " + Main.products.buffer.toString());
+            MainAsync.veryDifficultOperationForHalfASecond();
+
+//            System.out.println("After consumer: " + MainAsync.products.buffer.toString());
 
 
 
-            Main.products.finishConsuming(indexes);
+            MainAsync.products.finishConsuming(indexes);
         }
     }
 }

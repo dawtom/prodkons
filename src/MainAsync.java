@@ -1,12 +1,15 @@
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
-public class Main {
+public class MainAsync {
 
+    public static boolean threadsAreRunning = true;
 
-
-
+    public static AtomicInteger alreadyProduced = new AtomicInteger(0);
+    public static AtomicInteger operationsNumber = new AtomicInteger(0);
 /*
 
     public static int myVariable = 0;
@@ -16,21 +19,21 @@ public class Main {
     private static int threadsNumber = 100;*/
 
     static Products products= new Products();
+    public static final int bufferDelayInMilliseconds = 0;
+    public static final int generalThreadsNumber = 700;
 
-    //public MySemaphore mySemaphore = new MySemaphore();
-    // public static Semaphore semaphore = new Semaphore(1);
 
     public static void main(String[] args) throws Exception {
         List<ProducerThread> producers = new LinkedList<>();
 
-        int prodsNumber = 30;
+        int prodsNumber = MainAsync.generalThreadsNumber;
         for (int i = 0; i < prodsNumber; i++) {
             producers.add(new ProducerThread("P" + (i+1)));
         }
 
         List<ConsumerThread> consumers = new LinkedList<>();
 
-        int consNumber = 30;
+        int consNumber = MainAsync.generalThreadsNumber;
         for (int i = 0; i < consNumber; i++) {
             consumers.add(new ConsumerThread("C" + (i+1)));
         }
@@ -44,7 +47,13 @@ public class Main {
             c.start();
         }
 
+        TimeUnit.SECONDS.sleep(10);
 
+        threadsAreRunning = false;
+
+
+        System.out.println("Already produced: " + alreadyProduced);
+        System.out.println("Operations number: " + operationsNumber);
         /*List<Thread> allThreads = new ArrayList<>();
 
         for (int i = 0; i < threadsNumber; i++) {
@@ -67,5 +76,14 @@ public class Main {
         System.out.println("Result is " + myVariable);
 
         //System.out.println("Hello World!");*/
+    }
+
+    public static void veryDifficultOperationForHalfASecond(){
+        try {
+            TimeUnit.MILLISECONDS.sleep(500);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        operationsNumber.addAndGet(1);
     }
 }

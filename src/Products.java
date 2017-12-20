@@ -43,7 +43,7 @@ class Products {
 
     Products(){
 
-        int capacity = 20;
+        int capacity = 200000;
         for (int i = 0; i < capacity; i++) {
             buffer.add(0);
         }
@@ -74,7 +74,7 @@ class Products {
                 e.printStackTrace();
             }
         }
-        System.out.println("Queue empty: " + queueEmpty.toString());
+        //System.out.println("Queue empty: " + queueEmpty.toString());
 
         for (int i = 0; i < howMany; i++) {
             int j = queueEmpty.poll();
@@ -129,7 +129,7 @@ class Products {
                 e.printStackTrace();
             }
         }
-        System.out.println("Queue full: " + queueFull.toString());
+        //System.out.println("Queue full: " + queueFull.toString());
         for (int i = 0; i < howMany; i++){
 
             int j = queueFull.poll();
